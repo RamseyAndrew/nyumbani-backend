@@ -1,0 +1,105 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String        @id @default(uuid())
+  firebaseId   String        @unique
+  email        String        @unique
+  firstName    String?
+  lastName     String?
+  role         Role          @default(USER)
+  status       UserStatus    @default(ACTIVE)
+  createdAt    DateTime      @default(now())
+  agentProfile AgentProfile?
+  properties   Property[]
+  favorites    Favorite[]
+  inquiries    Inquiry[]
+}
+
+model AgentProfile {
+  id         String   @id @default(uuid())
+  userId     String   @unique
+  agencyName String
+  phone      String
+  bio        String?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Property {
+  id          String       @id @default(uuid())
+  title       String
+  description String
+  type        PropertyType
+  listingType ListingType
+  price       Float
+  bedrooms    Int?
+  bathrooms   Int?
+  size        Float?
+  address     String
+  subcounty   String
+  county      String
+  lat         Float
+  lng         Float
+  images      String[]
+  available   Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  agentId     String
+  agent       User         @relation(fields: [agentId], references: [id])
+  favorites   Favorite[]
+  inquiries   Inquiry[]
+}
+
+model Favorite {
+  id         String   @id @default(uuid())
+  userId     String
+  propertyId String
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id])
+  property   Property @relation(fields: [propertyId], references: [id])
+
+  @@unique([userId, propertyId])
+}
+
+model Inquiry {
+  id         String   @id @default(uuid())
+  name       String
+  email      String
+  message    String
+  propertyId String
+  userId     String?
+  createdAt  DateTime @default(now())
+  property   Property @relation(fields: [propertyId], references: [id])
+  user       User?    @relation(fields: [userId], references: [id])
+}
+
+enum Role {
+  USER
+  AGENT
+  ADMIN
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+}
+
+enum PropertyType {
+  APARTMENT
+  HOUSE
+  LAND
+  COMMERCIAL
+}
+
+enum ListingType {
+  SALE
+  RENT
+  LISTING
+}

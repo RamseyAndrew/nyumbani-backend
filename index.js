@@ -22,7 +22,7 @@ const corsOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
 app.use(cors({ origin: corsOrigins }));
 app.use(express.json());
 
-// Rate limiting on auth endpoints
+// Rate limiting on auth endpoints apparently ni very important to avoid traffic
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5, // 5 requests per window

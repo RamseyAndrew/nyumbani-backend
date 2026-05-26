@@ -15,11 +15,20 @@ const uploadsRouter = require('./routes/uploads');
 
 const app = express();
 
-const corsOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
-  .split(',')
-  .map((o) => o.trim())
-  .filter(Boolean);
-app.use(cors({ origin: corsOrigins }));
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000' 
+];
+
+if (process.env.CORS_ORIGIN) {
+  const productionOrigins = process.env.CORS_ORIGIN.split(',').map(o => o.trim());
+  allowedOrigins.push(...productionOrigins);
+}
+
+app.use(cors({ 
+  origin: allowedOrigins,
+  credentials: true 
+}));
 app.use(express.json());
 
 // Rate limiting on auth endpoints apparently ni very important to avoid traffic

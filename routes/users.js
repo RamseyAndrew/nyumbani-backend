@@ -1,6 +1,8 @@
 const express = require('express');
 const verifyToken = require('../middleware/auth');
 const prisma = require('../lib/prisma');
+// const adminEmail = process.env.ADMIN_EMAIL || '';
+// const userRole = email === adminEmail ? 'ADMIN' : (role === 'AGENT' ? 'AGENT' : 'USER');
 
 const router = express.Router();
 
@@ -12,6 +14,8 @@ router.post('/sync', verifyToken, async (req, res) => {
     const existing = await prisma.user.findUnique({ where: { firebaseId: uid } });
     if (existing) return res.json(existing);
 
+    const userRole = email === process.env.ADMIN_EMAIL ? 'ADMIN' : (role === 'AGENT' ? 'AGENT' : 'USER');
+
     const status = role === 'AGENT' ? 'PENDING' : 'ACTIVE';
     const user = await prisma.user.create({
       data: {
@@ -19,7 +23,7 @@ router.post('/sync', verifyToken, async (req, res) => {
         email,
         firstName: firstName || '',
         lastName: lastName || '',
-        role: role === 'AGENT' || email === process.env.ADMIN_EMAIL ? 'ADMIN' : (role === 'AGENT' ? 'AGENT' : 'USER'),
+        role: userRole,
         status,
         ...(role === 'AGENT' && {
           agentProfile: {

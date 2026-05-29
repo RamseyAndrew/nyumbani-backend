@@ -19,7 +19,7 @@ router.post('/sync', verifyToken, async (req, res) => {
         email,
         firstName: firstName || '',
         lastName: lastName || '',
-        role: role === 'AGENT' ? 'AGENT' : 'USER',
+        role: role === 'AGENT' || email === process.env.ADMIN_EMAIL ? 'ADMIN' : (role === 'AGENT' ? 'AGENT' : 'USER'),
         status,
         ...(role === 'AGENT' && {
           agentProfile: {

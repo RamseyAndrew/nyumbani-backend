@@ -10,15 +10,15 @@ model User {
   id           String        @id @default(uuid())
   firebaseId   String        @unique
   email        String        @unique
+  role         Role          @default(USER)
+  createdAt    DateTime      @default(now())
   firstName    String?
   lastName     String?
-  role         Role          @default(USER)
   status       UserStatus    @default(ACTIVE)
-  createdAt    DateTime      @default(now())
   agentProfile AgentProfile?
-  properties   Property[]
   favorites    Favorite[]
   inquiries    Inquiry[]
+  properties   Property[]
 }
 
 model AgentProfile {
@@ -41,8 +41,6 @@ model Property {
   bedrooms    Int?
   bathrooms   Int?
   size        Float?
-  address     String
-  subcounty   String
   county      String
   lat         Float
   lng         Float
@@ -51,9 +49,11 @@ model Property {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   agentId     String
-  agent       User         @relation(fields: [agentId], references: [id])
+  address     String
+  subcounty   String
   favorites   Favorite[]
   inquiries   Inquiry[]
+  agent       User         @relation(fields: [agentId], references: [id])
 }
 
 model Favorite {
@@ -61,8 +61,8 @@ model Favorite {
   userId     String
   propertyId String
   createdAt  DateTime @default(now())
-  user       User     @relation(fields: [userId], references: [id])
   property   Property @relation(fields: [propertyId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
 
   @@unique([userId, propertyId])
 }

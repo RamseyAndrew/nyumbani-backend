@@ -1,12 +1,10 @@
 const express = require('express');
 const verifyToken = require('../middleware/auth');
 const prisma = require('../lib/prisma');
-// const adminEmail = process.env.ADMIN_EMAIL || '';
-// const userRole = email === adminEmail ? 'ADMIN' : (role === 'AGENT' ? 'AGENT' : 'USER');
 
 const router = express.Router();
 
-// Sync Firebase user to DB on login/register
+
 router.post('/sync', verifyToken, async (req, res) => {
   const { uid, email } = req.user;
   const { firstName, lastName, role, agencyName, phone, bio } = req.body;
@@ -14,9 +12,17 @@ router.post('/sync', verifyToken, async (req, res) => {
     const existing = await prisma.user.findUnique({ where: { firebaseId: uid } });
     if (existing) return res.json(existing);
 
-    const userRole = email === process.env.ADMIN_EMAIL ? 'ADMIN' : (role === 'AGENT' ? 'AGENT' : 'USER');
+    const targetAdmin = (process.env.ADMIN_EMAIL || '').trim().toLowerCase();
+    const userEmail = (email || '').trim().toLowerCase();
+    
+    let userRole = 'USER';
+    if (userEmail === targetAdmin && targetAdmin !== '') {
+      userRole = 'ADMIN';
+    } else if (role === 'AGENT') {
+      userRole = 'AGENT';
+    }
 
-    const status = role === 'AGENT' ? 'PENDING' : 'ACTIVE';
+    const status = userRole === 'AGENT' ? 'PENDING' : 'ACTIVE';
     const user = await prisma.user.create({
       data: {
         firebaseId: uid,
@@ -25,9 +31,12 @@ router.post('/sync', verifyToken, async (req, res) => {
         lastName: lastName || '',
         role: userRole,
         status,
-        ...(role === 'AGENT' && {
+        ...(userRole === 'AGENT' && {
           agentProfile: {
-            create: { agencyName, phone, bio: bio || '' },
+            create: { 
+              agencyName: agencyName || 'Independent Agent', 
+              phone: phone || '',
+              bio: bio || '' },
           },
         }),
       },
@@ -39,27 +48,33 @@ router.post('/sync', verifyToken, async (req, res) => {
   }
 });
 
-// GET current user profile
 router.get('/me', verifyToken, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
       where: { firebaseId: req.user.uid },
-      include: { agentProfile: true, properties: true },
+      include: {
+         agentProfile: true, 
+         properties: {
+          orderBy: { createdAt: 'desc' }
+         }
+        },
     });
+    if (!user) return res.status(404).json({ error: 'User not found in database' });
     res.json(user);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
-// GET agent profile by userId (logged in users only)
 router.get('/agent/:id', verifyToken, async (req, res) => {
   try {
     const agent = await prisma.user.findUnique({
       where: { id: req.params.id },
       include: {
         agentProfile: true,
-        properties: { where: { available: true }, orderBy: { createdAt: 'desc' } },
+        properties: { 
+          where: { available: true }, 
+          orderBy: { createdAt: 'desc' } },
       },
     });
     if (!agent || agent.role !== 'AGENT') return res.status(404).json({ error: 'Agent not found' });

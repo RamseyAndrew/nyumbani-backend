@@ -6,7 +6,7 @@ const router = express.Router();
 
 
 router.post('/sync', verifyToken, async (req, res) => {
-  const { uid, email } = req.user;
+  const { uid, email, name } = req.user;
   const { firstName, lastName, role, agencyName, phone, bio } = req.body;
   try {
     const existing = await prisma.user.findUnique({ where: { firebaseId: uid } });
@@ -22,13 +22,24 @@ router.post('/sync', verifyToken, async (req, res) => {
       userRole = 'AGENT';
     }
 
+    let finalFirstName = firstName || '';
+    let finalLastName = lastName || '';
+    if (!finalFirstName && finalLastName && name) {
+      const nameParts = name.trim().split(' ');
+      finalFirstName = nameParts[0] || '';
+      finalLastName = nameParts.slice(1).join(' ') || '';
+    }
+    else if (!finalLastName && finalFirstName && name) {
+      finalLastName = 'user';
+    }
+
     const status = userRole === 'AGENT' ? 'PENDING' : 'ACTIVE';
     const user = await prisma.user.create({
       data: {
         firebaseId: uid,
         email,
-        firstName: firstName || '',
-        lastName: lastName || '',
+        firstName: finalFirstName,
+        lastName: finalLastName,
         role: userRole,
         status,
         ...(userRole === 'AGENT' && {
@@ -44,6 +55,7 @@ router.post('/sync', verifyToken, async (req, res) => {
     });
     res.json(user);
   } catch (e) {
+    console.error('Database Sync Error Details:', e);
     res.status(500).json({ error: e.message });
   }
 });

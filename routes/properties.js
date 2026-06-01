@@ -49,9 +49,12 @@ router.get('/:id', async (req, res) => {
 // POST create property (agent/admin only)
 router.post('/', verifyToken, async (req, res) => {
   try {
-    const agent = await prisma.user.findUnique({ where: { firebaseId: req.user.uid } });
+    
+    const agent = await prisma.user.findUnique({ where: { uid: req.user.uid } });
     if (!agent) return res.status(401).json({ error: 'Only agents can create properties' });
-    if (agent.role !== 'AGENT')
+    
+    
+    if (agent.role !== 'AGENT' && agent.role !== 'RA') 
       return res.status(403).json({ error: 'Forbidden' });
 
     // Validate input
@@ -99,7 +102,8 @@ router.put('/:id', verifyToken, async (req, res) => {
 // DELETE property
 router.delete('/:id', verifyToken, async (req, res) => {
   try {
-    const agent = await prisma.user.findUnique({ where: { firebaseId: req.user.uid } });
+    // 👇 FIX: Change 'firebaseId' to 'uid'
+    const agent = await prisma.user.findUnique({ where: { uid: req.user.uid } });
     if (!agent) return res.status(401).json({ error: 'User not found' });
     const property = await prisma.property.findUnique({ where: { id: req.params.id } });
     if (!property) return res.status(404).json({ error: 'Not found' });

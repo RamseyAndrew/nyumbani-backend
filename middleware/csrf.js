@@ -6,8 +6,8 @@ const { generateCsrfToken: generateToken, doubleCsrfProtection } = doubleCsrf({
   cookieName: 'psifi.x-csrf-token',
   cookieOptions: {
     httpOnly: true,
-    sameSite: 'strict',
-    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'none',
+    secure: true,
     path: '/',
   },
   size: 64,

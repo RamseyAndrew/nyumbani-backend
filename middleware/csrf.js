@@ -1,7 +1,8 @@
 const { doubleCsrf } = require('csrf-csrf');
 
-const { generateToken, doubleCsrfProtection } = doubleCsrf({
+const { generateCsrfToken: generateToken, doubleCsrfProtection } = doubleCsrf({
   getSecret: () => process.env.CSRF_SECRET || 'nyumbani-csrf-secret-change-in-prod',
+  getSessionIdentifier: (req) => req.ip,
   cookieName: 'psifi.x-csrf-token',
   cookieOptions: {
     httpOnly: true,

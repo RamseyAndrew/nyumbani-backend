@@ -1,6 +1,6 @@
 const { doubleCsrf } = require('csrf-csrf');
 
-const { generateCsrfToken, doubleCsrfProtection } = doubleCsrf({
+const { generateToken, doubleCsrfProtection } = doubleCsrf({
   getSecret: () => process.env.CSRF_SECRET || 'nyumbani-csrf-secret-change-in-prod',
   cookieName: 'psifi.x-csrf-token',
   cookieOptions: {
@@ -10,8 +10,8 @@ const { generateCsrfToken, doubleCsrfProtection } = doubleCsrf({
     path: '/',
   },
   size: 64,
-  getCsrfTokenFromRequest: (req) =>
+  getTokenFromRequest: (req) =>
     req.headers['x-csrf-token'] || req.body?._csrf,
 });
 
-module.exports = { generateCsrfToken, doubleCsrfProtection };
+module.exports = { generateToken, doubleCsrfProtection };

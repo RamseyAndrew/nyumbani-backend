@@ -4,7 +4,9 @@ validateEnv();
 
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
+const { generateToken, doubleCsrfProtection } = require('./middleware/csrf');
 
 const propertiesRouter = require('./routes/properties');
 const inquiriesRouter = require('./routes/inquiries');
@@ -29,7 +31,16 @@ app.use(cors({
   origin: allowedOrigins,
   credentials: true 
 }));
+app.use(cookieParser());
 app.use(express.json());
+
+// CSRF protection for all state-changing routes
+app.use(doubleCsrfProtection);
+
+// Endpoint for the frontend to fetch a CSRF token
+app.get('/api/csrf-token', (req, res) => {
+  res.json({ csrfToken: generateToken(req, res) });
+});
 
 // Rate limiting on auth endpoints apparently ni very important to avoid traffic
 const authLimiter = rateLimit({

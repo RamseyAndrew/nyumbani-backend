@@ -50,11 +50,11 @@ router.get('/:id', async (req, res) => {
 router.post('/', verifyToken, async (req, res) => {
   try {
     
-    const agent = await prisma.user.findUnique({ where: { uid: req.user.uid } });
+    const agent = await prisma.user.findUnique({ where: { firebaseId: req.user.uid } });
     if (!agent) return res.status(401).json({ error: 'Only agents can create properties' });
     
     
-    if (agent.role !== 'AGENT' && agent.role !== 'RA') 
+    if (agent.role !== 'AGENT' && agent.role !== 'ADMIN') 
       return res.status(403).json({ error: 'Forbidden' });
 
     // Validate input
@@ -70,8 +70,14 @@ router.post('/', verifyToken, async (req, res) => {
     if (lat < -5 || lat > 5 || lng < 33.9 || lng > 42)
       return res.status(400).json({ error: 'Coordinates must be in Kenya' });
 
+    const allowed = ['title','description','type','listingType','price','bedrooms','bathrooms','size','county','lat','lng','images','address','subcounty','available'];
+    const data = {};
+    for (const k of allowed) {
+      if (k in req.body) data[k] = req.body[k];
+    }
+
     const property = await prisma.property.create({
-      data: { ...req.body, agentId: agent.id },
+      data: { ...data, agentId: agent.id },
     });
     res.status(201).json(property);
   } catch (e) {
@@ -89,9 +95,15 @@ router.put('/:id', verifyToken, async (req, res) => {
     if (property.agentId !== agent.id && agent.role !== 'ADMIN')
       return res.status(403).json({ error: 'Forbidden' });
 
+    const allowed = ['title','description','type','listingType','price','bedrooms','bathrooms','size','county','lat','lng','images','address','subcounty','available'];
+    const updateData = {};
+    for (const k of allowed) {
+      if (k in req.body) updateData[k] = req.body[k];
+    }
+
     const updated = await prisma.property.update({
       where: { id: req.params.id },
-      data: req.body,
+      data: updateData,
     });
     res.json(updated);
   } catch (e) {
@@ -102,8 +114,7 @@ router.put('/:id', verifyToken, async (req, res) => {
 // DELETE property
 router.delete('/:id', verifyToken, async (req, res) => {
   try {
-    // 👇 FIX: Change 'firebaseId' to 'uid'
-    const agent = await prisma.user.findUnique({ where: { uid: req.user.uid } });
+    const agent = await prisma.user.findUnique({ where: { firebaseId: req.user.uid } });
     if (!agent) return res.status(401).json({ error: 'User not found' });
     const property = await prisma.property.findUnique({ where: { id: req.params.id } });
     if (!property) return res.status(404).json({ error: 'Not found' });
